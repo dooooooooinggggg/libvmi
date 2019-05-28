@@ -54,7 +54,7 @@ option(ENABLE_SAFETY_CHECKS "Enable API safety checks" ON)
 option(ENABLE_TESTING "Build libvmi test suite" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)
 # See libvmi/debug.h for possible debug levels
-option(VMI_DEBUG "Debug output level" ON)
+option(VMI_DEBUG "Debug output level" OFF)
 
 # default values
 set(MAX_PAGE_CACHE_SIZE "512")
