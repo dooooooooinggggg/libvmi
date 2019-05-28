@@ -29,3 +29,5 @@ tools/linux-offset-finder/modules.order
 *.o
 *.lo
 build
+
+.vscode/

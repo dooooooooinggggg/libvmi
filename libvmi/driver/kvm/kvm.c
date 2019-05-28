@@ -53,19 +53,21 @@
 #define QMP_CMD_LENGTH 256
 
 #if HAVE_LIBVMI_REQUEST == 1
-# include <qemu/libvmi_request.h>
+#include <qemu/libvmi_request.h>
 #else
 
 // request struct matches a definition in qemu source code
-struct request {
-    uint64_t type;   // 0 quit, 1 read, 2 write, ... rest reserved
-    uint64_t address;   // address to read from OR write to
-    uint64_t length;    // number of bytes to read OR write
+struct request
+{
+    uint64_t type;    // 0 quit, 1 read, 2 write, ... rest reserved
+    uint64_t address; // address to read from OR write to
+    uint64_t length;  // number of bytes to read OR write
 };
 
 #endif
 
-enum segment_type {
+enum segment_type
+{
     SEGMENT_SELECTOR,
     SEGMENT_BASE,
     SEGMENT_LIMIT,
@@ -84,7 +86,7 @@ exec_qmp_cmd(
 {
     FILE *p;
     char *output = g_malloc0(20000);
-    if ( !output )
+    if (!output)
         return NULL;
 
     size_t length = 0;
@@ -92,7 +94,8 @@ exec_qmp_cmd(
     int cmd_length = strlen(name) + strnlen(query, QMP_CMD_LENGTH) + 47;
 
     char *cmd = g_malloc0(cmd_length);
-    if ( !cmd ) {
+    if (!cmd)
+    {
         g_free(output);
         return NULL;
     }
@@ -100,7 +103,8 @@ exec_qmp_cmd(
     int rc = snprintf(cmd, cmd_length, "virsh -c qemu:///system qemu-monitor-command %s %s", name,
                       query);
 
-    if (rc < 0 || rc >= cmd_length) {
+    if (rc < 0 || rc >= cmd_length)
+    {
         errprint("Failed to properly format `virsh qemu-monitor-command`\n");
         g_free(cmd);
         g_free(output);
@@ -109,7 +113,8 @@ exec_qmp_cmd(
     dbprint(VMI_DEBUG_KVM, "--qmp: %s\n", cmd);
 
     p = popen(cmd, "r");
-    if (NULL == p) {
+    if (NULL == p)
+    {
         dbprint(VMI_DEBUG_KVM, "--failed to run QMP command\n");
         g_free(cmd);
         g_free(output);
@@ -120,10 +125,13 @@ exec_qmp_cmd(
     pclose(p);
     g_free(cmd);
 
-    if (length == 0) {
+    if (length == 0)
+    {
         g_free(output);
         return NULL;
-    } else {
+    }
+    else
+    {
         return output;
     }
 }
@@ -163,16 +171,17 @@ exec_memory_access(
     kvm_instance_t *kvm)
 {
     char *tmpfile = tempnam("/tmp", "vmi");
-    char *query = (char *) g_malloc0(QMP_CMD_LENGTH);
+    char *query = (char *)g_malloc0(QMP_CMD_LENGTH);
 
-    if ( !query )
+    if (!query)
         return NULL;
 
     int rc = snprintf(query,
                       QMP_CMD_LENGTH,
                       "'{\"execute\": \"pmemaccess\", \"arguments\": {\"path\": \"%s\"}}'",
                       tmpfile);
-    if (rc < 0 || rc >= QMP_CMD_LENGTH) {
+    if (rc < 0 || rc >= QMP_CMD_LENGTH)
+    {
         g_free(query);
         errprint("Failed to properly format `pmemaccess` command\n");
         return NULL;
@@ -192,15 +201,16 @@ exec_xp(
     int numwords,
     addr_t paddr)
 {
-    char *query = (char *) g_malloc0(QMP_CMD_LENGTH);
-    if ( !query )
+    char *query = (char *)g_malloc0(QMP_CMD_LENGTH);
+    if (!query)
         return NULL;
 
     int rc = snprintf(query,
                       QMP_CMD_LENGTH,
                       "'{\"execute\": \"human-monitor-command\", \"arguments\": {\"command-line\": \"xp /%dwx 0x%lx\"}}'",
                       numwords, paddr);
-    if (rc < 0 || rc >= QMP_CMD_LENGTH) {
+    if (rc < 0 || rc >= QMP_CMD_LENGTH)
+    {
         g_free(query);
         errprint("Failed to properly format `human-monitor-command` command\n");
         return NULL;
@@ -217,16 +227,20 @@ parse_reg_value(
     char *regname,
     char *ir_output)
 {
-    if (NULL == ir_output || NULL == regname) {
+    if (NULL == ir_output || NULL == regname)
+    {
         return 0;
     }
 
     char *ptr = strcasestr(ir_output, regname);
 
-    if (NULL != ptr) {
+    if (NULL != ptr)
+    {
         ptr += strlen(regname) + 1;
-        return (reg_t) strtoull(ptr, (char **) NULL, 16);
-    } else {
+        return (reg_t)strtoull(ptr, (char **)NULL, 16);
+    }
+    else
+    {
         return 0;
     }
 }
@@ -239,9 +253,10 @@ parse_seg_reg_value(
 {
     int offset;
     char *ptr, *tmp_ptr;
-    char keyword[5] = { [0 ... 4] = '\0' };
+    char keyword[5] = {[0 ... 4] = '\0'};
 
-    if (NULL == ir_output || NULL == regname) {
+    if (NULL == ir_output || NULL == regname)
+    {
         return 0;
     }
 
@@ -255,33 +270,34 @@ parse_seg_reg_value(
         return 0;
 
     tmp_ptr = ptr;
-    switch (type) {
-        case SEGMENT_SELECTOR:
-            offset = 4;
-            break;
-        case SEGMENT_BASE:
-            offset = 9;
-            break;
-        case SEGMENT_LIMIT:
-            tmp_ptr += 9;
-            if (8 == strlen(tmp_ptr))
-                offset = 18;
-            else
-                offset = 26;
-            break;
-        case SEGMENT_ATTR:
-            tmp_ptr += 9;
-            if (8 == strlen(tmp_ptr))
-                offset = 27;
-            else
-                offset = 35;
-            break;
-        default:
-            return 0;
+    switch (type)
+    {
+    case SEGMENT_SELECTOR:
+        offset = 4;
+        break;
+    case SEGMENT_BASE:
+        offset = 9;
+        break;
+    case SEGMENT_LIMIT:
+        tmp_ptr += 9;
+        if (8 == strlen(tmp_ptr))
+            offset = 18;
+        else
+            offset = 26;
+        break;
+    case SEGMENT_ATTR:
+        tmp_ptr += 9;
+        if (8 == strlen(tmp_ptr))
+            offset = 27;
+        else
+            offset = 35;
+        break;
+    default:
+        return 0;
     }
 
     ptr += offset;
-    return (reg_t) strtoull(ptr, (char **) NULL, 16);
+    return (reg_t)strtoull(ptr, (char **)NULL, 16);
 }
 
 static addr_t
@@ -298,9 +314,11 @@ parse_mtree(char *mtree_output)
 
     // for each line
     line = strtok_r(mtree_output, line_delim, &tmp);
-    do {
+    do
+    {
         // check for above 4g
-        if (strstr(line, above_4g) != NULL) {
+        if (strstr(line, above_4g) != NULL)
+        {
             above_4g_line = strdup(line);
             break;
         }
@@ -327,7 +345,7 @@ parse_mtree(char *mtree_output)
     if (ptr == NULL)
         goto out_error;
     // ptr: 000000013fffffff (prio 0, RW): alias ram
-    value = (addr_t) strtoll(ptr, (char **) NULL, 16) + 1;
+    value = (addr_t)strtoll(ptr, (char **)NULL, 16) + 1;
 out_error:
     if (above_4g_line)
         free(above_4g_line);
@@ -338,15 +356,19 @@ status_t
 exec_memory_access_success(
     char *status)
 {
-    if (NULL == status) {
+    if (NULL == status)
+    {
         return VMI_FAILURE;
     }
 
     char *ptr = strcasestr(status, "CommandNotFound");
 
-    if (NULL == ptr) {
+    if (NULL == ptr)
+    {
         return VMI_SUCCESS;
-    } else {
+    }
+    else
+    {
         return VMI_FAILURE;
     }
 }
@@ -359,9 +381,12 @@ static status_t
 test_using_kvm_patch(
     kvm_instance_t *kvm)
 {
-    if (kvm->socket_fd) {
+    if (kvm->socket_fd)
+    {
         return VMI_SUCCESS;
-    } else {
+    }
+    else
+    {
         return VMI_FAILURE;
     }
 }
@@ -377,7 +402,8 @@ init_domain_socket(
     size_t address_length;
 
     socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
-    if (socket_fd < 0) {
+    if (socket_fd < 0)
+    {
         dbprint(VMI_DEBUG_KVM, "--socket() failed\n");
         return VMI_FAILURE;
     }
@@ -385,10 +411,10 @@ init_domain_socket(
     address.sun_family = AF_UNIX;
     address_length =
         sizeof(address.sun_family) + sprintf(address.sun_path, "%s",
-                kvm->ds_path);
+                                             kvm->ds_path);
 
-    if (connect(socket_fd, (struct sockaddr *) &address, address_length)
-            != 0) {
+    if (connect(socket_fd, (struct sockaddr *)&address, address_length) != 0)
+    {
         dbprint(VMI_DEBUG_KVM, "--connect() failed to %s, %s\n", kvm->ds_path, strerror(errno));
         close(socket_fd);
         return VMI_FAILURE;
@@ -402,10 +428,11 @@ static void
 destroy_domain_socket(
     kvm_instance_t *kvm)
 {
-    if (VMI_SUCCESS == test_using_kvm_patch(kvm)) {
+    if (VMI_SUCCESS == test_using_kvm_patch(kvm))
+    {
         struct request req;
 
-        req.type = 0;   // quit
+        req.type = 0; // quit
         req.address = 0;
         req.length = 0;
         if (write(kvm->socket_fd, &req, sizeof(struct request)) < 0)
@@ -423,32 +450,36 @@ kvm_get_memory_patch(
     uint32_t length)
 {
     char *buf = g_malloc0(length + 1);
-    if ( !buf )
+    if (!buf)
         return NULL;
 
     struct request req;
 
-    req.type = 1;   // read request
-    req.address = (uint64_t) paddr;
-    req.length = (uint64_t) length;
+    req.type = 1; // read request
+    req.address = (uint64_t)paddr;
+    req.length = (uint64_t)length;
 
     int nbytes =
         write(kvm_get_instance(vmi)->socket_fd, &req,
               sizeof(struct request));
-    if (nbytes != sizeof(struct request)) {
+    if (nbytes != sizeof(struct request))
+    {
         goto error_exit;
-    } else {
+    }
+    else
+    {
         // get the data from kvm
         nbytes = read(kvm_get_instance(vmi)->socket_fd, buf, length + 1);
-        if ( nbytes <= 0 )
+        if (nbytes <= 0)
             goto error_exit;
 
-        if ( (uint32_t)nbytes != (length + 1) )
+        if ((uint32_t)nbytes != (length + 1))
             goto error_exit;
 
         // check that kvm thinks everything is ok by looking at the last byte
         // of the buffer, 0 is failure and 1 is success
-        if (buf[length]) {
+        if (buf[length])
+        {
             // success, return pointer to buf
             return buf;
         }
@@ -472,11 +503,12 @@ kvm_get_memory_native(
     char *bufstr = exec_xp(kvm_get_instance(vmi), numwords, paddr);
     char *paddrstr = g_malloc0(32);
 
-    if ( !buf || !bufstr || !paddrstr )
+    if (!buf || !bufstr || !paddrstr)
         goto error;
 
     int rc = snprintf(paddrstr, 32, "%.16lx", paddr);
-    if (rc < 0 || rc >= 32) {
+    if (rc < 0 || rc >= 32)
+    {
         errprint("Failed to properly format physical address\n");
         goto error;
     }
@@ -484,11 +516,13 @@ kvm_get_memory_native(
     char *ptr = strcasestr(bufstr, paddrstr);
     int i = 0, j = 0;
 
-    while (i < numwords && NULL != ptr) {
+    while (i < numwords && NULL != ptr)
+    {
         ptr += strlen(paddrstr) + 2;
 
-        for (j = 0; j < 4; ++j) {
-            uint32_t value = strtol(ptr, (char **) NULL, 16);
+        for (j = 0; j < 4; ++j)
+        {
+            uint32_t value = strtol(ptr, (char **)NULL, 16);
 
             memcpy(buf + i * 4, &value, 4);
             ptr += 11;
@@ -496,7 +530,8 @@ kvm_get_memory_native(
         }
 
         rc = snprintf(paddrstr, 32, "%.16lx", paddr + i * 4);
-        if (rc < 0 || rc >= 32) {
+        if (rc < 0 || rc >= 32)
+        {
             errprint("Failed to properly format physical address\n");
             goto error;
         }
@@ -514,8 +549,7 @@ error:
     return NULL;
 }
 
-void
-kvm_release_memory(
+void kvm_release_memory(
     vmi_instance_t UNUSED(vmi),
     void *memory,
     size_t UNUSED(length))
@@ -533,25 +567,29 @@ kvm_put_memory(
 {
     struct request req;
 
-    req.type = 2;   // write request
-    req.address = (uint64_t) paddr;
-    req.length = (uint64_t) length;
+    req.type = 2; // write request
+    req.address = (uint64_t)paddr;
+    req.length = (uint64_t)length;
 
     int nbytes =
         write(kvm_get_instance(vmi)->socket_fd, &req,
               sizeof(struct request));
-    if (nbytes != sizeof(struct request)) {
+    if (nbytes != sizeof(struct request))
+    {
         goto error_exit;
-    } else {
+    }
+    else
+    {
         uint8_t status = 0;
 
-        if ( length != write(kvm_get_instance(vmi)->socket_fd, buf, length) )
+        if (length != write(kvm_get_instance(vmi)->socket_fd, buf, length))
             goto error_exit;
 
-        if ( 1 != read(kvm_get_instance(vmi)->socket_fd, &status, 1) )
+        if (1 != read(kvm_get_instance(vmi)->socket_fd, &status, 1))
             goto error_exit;
 
-        if (0 == status) {
+        if (0 == status)
+        {
             goto error_exit;
         }
     }
@@ -576,7 +614,8 @@ kvm_setup_live_mode(
 {
     kvm_instance_t *kvm = kvm_get_instance(vmi);
 
-    if (VMI_SUCCESS == test_using_kvm_patch(kvm)) {
+    if (VMI_SUCCESS == test_using_kvm_patch(kvm))
+    {
         dbprint(VMI_DEBUG_KVM, "--kvm: resume custom patch for fast memory access\n");
 
         pid_cache_flush(vmi);
@@ -590,7 +629,8 @@ kvm_setup_live_mode(
     }
 
     char *status = exec_memory_access(kvm_get_instance(vmi));
-    if (VMI_SUCCESS == exec_memory_access_success(status)) {
+    if (VMI_SUCCESS == exec_memory_access_success(status))
+    {
         dbprint(VMI_DEBUG_KVM, "--kvm: using custom patch for fast memory access\n");
         memory_cache_destroy(vmi);
         memory_cache_init(vmi, kvm_get_memory_patch, kvm_release_memory,
@@ -598,9 +638,10 @@ kvm_setup_live_mode(
         if (status)
             free(status);
         return init_domain_socket(kvm_get_instance(vmi));
-    } else {
-        dbprint
-        (VMI_DEBUG_KVM, "--kvm: didn't find patch, falling back to slower native access\n");
+    }
+    else
+    {
+        dbprint(VMI_DEBUG_KVM, "--kvm: didn't find patch, falling back to slower native access\n");
         memory_cache_destroy(vmi);
         memory_cache_init(vmi, kvm_get_memory_native,
                           kvm_release_memory, 1);
@@ -617,14 +658,15 @@ status_t
 kvm_init(
     vmi_instance_t vmi,
     uint32_t UNUSED(init_flags),
-    vmi_init_data_t* UNUSED(init_data))
+    vmi_init_data_t *UNUSED(init_data))
 {
     kvm_instance_t *kvm = g_malloc0(sizeof(kvm_instance_t));
-    if ( VMI_FAILURE == create_libvirt_wrapper(kvm) )
+    if (VMI_FAILURE == create_libvirt_wrapper(kvm))
         return VMI_FAILURE;
 
     virConnectPtr conn = kvm->libvirt.virConnectOpenAuth("qemu:///system", kvm->libvirt.virConnectAuthPtrDefault, 0);
-    if (NULL == conn) {
+    if (NULL == conn)
+    {
         dbprint(VMI_DEBUG_KVM, "--no connection to kvm hypervisor\n");
         free(kvm);
         return VMI_FAILURE;
@@ -632,7 +674,7 @@ kvm_init(
 
     kvm->conn = conn;
 
-    vmi->driver.driver_data = (void*)kvm;
+    vmi->driver.driver_data = (void *)kvm;
 
     return VMI_SUCCESS;
 }
@@ -641,12 +683,13 @@ status_t
 kvm_init_vmi(
     vmi_instance_t vmi,
     uint32_t UNUSED(init_flags),
-    vmi_init_data_t* UNUSED(init_data))
+    vmi_init_data_t *UNUSED(init_data))
 {
     kvm_instance_t *kvm = kvm_get_instance(vmi);
     virDomainInfo info;
     virDomainPtr dom = kvm->libvirt.virDomainLookupByID(kvm->conn, kvm->id);
-    if (NULL == dom) {
+    if (NULL == dom)
+    {
         dbprint(VMI_DEBUG_KVM, "--failed to find kvm domain\n");
         return VMI_FAILURE;
     }
@@ -654,7 +697,8 @@ kvm_init_vmi(
     // get the libvirt version
     unsigned long libVer = 0;
 
-    if (kvm->libvirt.virConnectGetLibVersion(kvm->conn, &libVer) != 0) {
+    if (kvm->libvirt.virConnectGetLibVersion(kvm->conn, &libVer) != 0)
+    {
         dbprint(VMI_DEBUG_KVM, "--failed to get libvirt version\n");
         return VMI_FAILURE;
     }
@@ -665,7 +709,8 @@ kvm_init_vmi(
     vmi->vm_type = NORMAL;
 
     //get the VCPU count from virDomainInfo structure
-    if (-1 == kvm->libvirt.virDomainGetInfo(kvm->dom, &info)) {
+    if (-1 == kvm->libvirt.virDomainGetInfo(kvm->dom, &info))
+    {
         dbprint(VMI_DEBUG_KVM, "--failed to get vm info\n");
         return VMI_FAILURE;
     }
@@ -687,7 +732,7 @@ kvm_init_vmi(
     //   "id": "libvirt-42"
     // }
 
-    struct json_object *return_obj= NULL;
+    struct json_object *return_obj = NULL;
     struct json_object *qemu_obj = NULL;
     struct json_object *major_obj = NULL;
     struct json_object *minor_obj = NULL;
@@ -714,7 +759,8 @@ kvm_init_vmi(
     // get major int number
     int minor = json_object_get_int(minor_obj);
     // QEMU should be < 2.8.0
-    if (major >= 2 && minor >= 8) {
+    if (major >= 2 && minor > 8)
+    {
         dbprint(VMI_DEBUG_KVM, "--Fail: incompatibility between libvmi and QEMU request definition detected\n");
         goto out_error;
     }
@@ -733,17 +779,18 @@ success:
     return kvm_setup_live_mode(vmi);
 }
 
-void
-kvm_destroy(
+void kvm_destroy(
     vmi_instance_t vmi)
 {
     kvm_instance_t *kvm = kvm_get_instance(vmi);
     destroy_domain_socket(kvm);
 
-    if (kvm->dom) {
+    if (kvm->dom)
+    {
         kvm->libvirt.virDomainFree(kvm->dom);
     }
-    if (kvm->conn) {
+    if (kvm->conn)
+    {
         kvm->libvirt.virConnectClose(kvm->conn);
     }
 
@@ -760,13 +807,17 @@ kvm_get_id_from_name(
     kvm_instance_t *kvm = kvm_get_instance(vmi);
 
     dom = kvm->libvirt.virDomainLookupByName(kvm->conn, name);
-    if (NULL == dom) {
+    if (NULL == dom)
+    {
         dbprint(VMI_DEBUG_KVM, "--failed to find kvm domain\n");
         domainid = VMI_INVALID_DOMID;
-    } else {
+    }
+    else
+    {
 
-        domainid = (uint64_t) kvm->libvirt.virDomainGetID(dom);
-        if (domainid == (uint64_t)-1) {
+        domainid = (uint64_t)kvm->libvirt.virDomainGetID(dom);
+        if (domainid == (uint64_t)-1)
+        {
             dbprint(VMI_DEBUG_KVM, "--requested kvm domain may not be running\n");
             domainid = VMI_INVALID_DOMID;
         }
@@ -785,26 +836,31 @@ kvm_get_name_from_id(
     char **name)
 {
     virDomainPtr dom = NULL;
-    const char* temp_name = NULL;
+    const char *temp_name = NULL;
     kvm_instance_t *kvm = kvm_get_instance(vmi);
 
     dom = kvm->libvirt.virDomainLookupByID(kvm->conn, domainid);
-    if (NULL == dom) {
+    if (NULL == dom)
+    {
         dbprint(VMI_DEBUG_KVM, "--failed to find kvm domain\n");
         return VMI_FAILURE;
     }
 
     temp_name = kvm->libvirt.virDomainGetName(dom);
-    if (temp_name) {
+    if (temp_name)
+    {
         *name = strndup(temp_name, QMP_CMD_LENGTH);
-    } else {
+    }
+    else
+    {
         *name = NULL;
     }
 
     if (dom)
         kvm->libvirt.virDomainFree(dom);
 
-    if (*name) {
+    if (*name)
+    {
         return VMI_SUCCESS;
     }
 
@@ -818,8 +874,7 @@ kvm_get_id(
     return kvm_get_instance(vmi)->id;
 }
 
-void
-kvm_set_id(
+void kvm_set_id(
     vmi_instance_t vmi,
     uint64_t domainid)
 {
@@ -835,7 +890,8 @@ kvm_check_id(
     kvm_instance_t *kvm = kvm_get_instance(vmi);
 
     dom = kvm->libvirt.virDomainLookupByID(kvm->conn, domainid);
-    if (NULL == dom) {
+    if (NULL == dom)
+    {
         dbprint(VMI_DEBUG_KVM, "--failed to find kvm domain\n");
         return VMI_FAILURE;
     }
@@ -857,16 +913,18 @@ kvm_get_name(
 
     // don't need to deallocate the name, it will go away with the domain object
 
-    if (NULL != tmpname) {
+    if (NULL != tmpname)
+    {
         *name = strdup(tmpname);
         return VMI_SUCCESS;
-    } else {
+    }
+    else
+    {
         return VMI_FAILURE;
     }
 }
 
-void
-kvm_set_name(
+void kvm_set_name(
     vmi_instance_t vmi,
     const char *name)
 {
@@ -882,7 +940,8 @@ kvm_get_memsize(
     kvm_instance_t *kvm = kvm_get_instance(vmi);
     virDomainInfo info;
 
-    if (-1 == kvm->libvirt.virDomainGetInfo(kvm->dom, &info)) {
+    if (-1 == kvm->libvirt.virDomainGetInfo(kvm->dom, &info))
+    {
         dbprint(VMI_DEBUG_KVM, "--failed to get vm info\n");
         goto error_exit;
     }
@@ -891,7 +950,7 @@ kvm_get_memsize(
     addr_t parsed_max = parse_mtree(bufstr);
 
     if (parsed_max != 0)
-        *maximum_physical_address = (addr_t) parsed_max;
+        *maximum_physical_address = (addr_t)parsed_max;
     else
         *maximum_physical_address = *allocated_ram_size;
 
@@ -915,248 +974,254 @@ kvm_get_vcpureg(
 
     status_t ret = VMI_SUCCESS;
 
-    switch (reg) {
-        case CR0:
-            *value = parse_reg_value("CR0", regs);
-            break;
-        case CR2:
-            *value = parse_reg_value("CR2", regs);
-            break;
-        case CR3:
-            *value = parse_reg_value("CR3", regs);
-            break;
-        case CR4:
-            *value = parse_reg_value("CR4", regs);
-            break;
-        case DR0:
-            *value = parse_reg_value("DR0", regs);
-            break;
-        case DR1:
-            *value = parse_reg_value("DR1", regs);
-            break;
-        case DR2:
-            *value = parse_reg_value("DR2", regs);
-            break;
-        case DR3:
-            *value = parse_reg_value("DR3", regs);
-            break;
-        case DR6:
-            *value = parse_reg_value("DR6", regs);
-            break;
-        case DR7:
-            *value = parse_reg_value("DR7", regs);
-            break;
-        case CS_SEL:
-            *value = parse_seg_reg_value("CS", regs, SEGMENT_SELECTOR);
-            break;
-        case DS_SEL:
-            *value = parse_seg_reg_value("DS", regs, SEGMENT_SELECTOR);
-            break;
-        case ES_SEL:
-            *value = parse_seg_reg_value("ES", regs, SEGMENT_SELECTOR);
-            break;
-        case FS_SEL:
-            *value = parse_seg_reg_value("FS", regs, SEGMENT_SELECTOR);
-            break;
-        case GS_SEL:
-            *value = parse_seg_reg_value("GS", regs, SEGMENT_SELECTOR);
-            break;
-        case SS_SEL:
-            *value = parse_seg_reg_value("SS", regs, SEGMENT_SELECTOR);
-            break;
-        case TR_SEL:
-            *value = parse_seg_reg_value("TR", regs, SEGMENT_SELECTOR);
-            break;
-        case LDTR_SEL:
-            *value = parse_seg_reg_value("LDT", regs, SEGMENT_SELECTOR);
-            break;
-        case CS_LIMIT:
-            *value = parse_seg_reg_value("CS", regs, SEGMENT_LIMIT);
-            break;
-        case DS_LIMIT:
-            *value = parse_seg_reg_value("DS", regs, SEGMENT_LIMIT);
-            break;
-        case ES_LIMIT:
-            *value = parse_seg_reg_value("ES", regs, SEGMENT_LIMIT);
-            break;
-        case FS_LIMIT:
-            *value = parse_seg_reg_value("FS", regs, SEGMENT_LIMIT);
-            break;
-        case GS_LIMIT:
-            *value = parse_seg_reg_value("GS", regs, SEGMENT_LIMIT);
-            break;
-        case SS_LIMIT:
-            *value = parse_seg_reg_value("SS", regs, SEGMENT_LIMIT);
-            break;
-        case TR_LIMIT:
-            *value = parse_seg_reg_value("TR", regs, SEGMENT_LIMIT);
-            break;
-        case LDTR_LIMIT:
-            *value = parse_seg_reg_value("LDTR", regs, SEGMENT_LIMIT);
-            break;
-        case IDTR_LIMIT:
-            *value = parse_seg_reg_value("IDTR", regs, SEGMENT_LIMIT);
-            break;
-        case GDTR_LIMIT:
-            *value = parse_seg_reg_value("GDTR", regs, SEGMENT_LIMIT);
-            break;
-        case CS_BASE:
-            *value = parse_seg_reg_value("CS", regs, SEGMENT_BASE);
-            break;
-        case DS_BASE:
-            *value = parse_seg_reg_value("DS", regs, SEGMENT_BASE);
-            break;
-        case ES_BASE:
-            *value = parse_seg_reg_value("ES", regs, SEGMENT_BASE);
-            break;
-        case FS_BASE:
-            *value = parse_seg_reg_value("FS", regs, SEGMENT_BASE);
-            break;
-        case GS_BASE:
-            *value = parse_seg_reg_value("GS", regs, SEGMENT_BASE);
-            break;
-        case SS_BASE:
-            *value = parse_seg_reg_value("SS", regs, SEGMENT_BASE);
-            break;
-        case TR_BASE:
-            *value = parse_seg_reg_value("TR", regs, SEGMENT_BASE);
-            break;
-        case LDTR_BASE:
-            *value = parse_seg_reg_value("LDT", regs, SEGMENT_BASE);
-            break;
-        case IDTR_BASE:
-            *value = parse_seg_reg_value("IDT", regs, SEGMENT_BASE);
-            break;
-        case GDTR_BASE:
-            *value = parse_seg_reg_value("GDT", regs, SEGMENT_BASE);
-            break;
-        case CS_ARBYTES:
-            *value = parse_seg_reg_value("CS", regs, SEGMENT_ATTR);
-            break;
-        case DS_ARBYTES:
-            *value = parse_seg_reg_value("DS", regs, SEGMENT_ATTR);
-            break;
-        case ES_ARBYTES:
-            *value = parse_seg_reg_value("ES", regs, SEGMENT_ATTR);
-            break;
-        case FS_ARBYTES:
-            *value = parse_seg_reg_value("FS", regs, SEGMENT_ATTR);
-            break;
-        case GS_ARBYTES:
-            *value = parse_seg_reg_value("GS", regs, SEGMENT_ATTR);
-            break;
-        case SS_ARBYTES:
-            *value = parse_seg_reg_value("SS", regs, SEGMENT_ATTR);
-            break;
-        case TR_ARBYTES:
-            *value = parse_seg_reg_value("TR", regs, SEGMENT_ATTR);
-            break;
-        case LDTR_ARBYTES:
-            *value = parse_seg_reg_value("LDT", regs, SEGMENT_ATTR);
-            break;
-        case MSR_EFER:
-            *value = parse_reg_value("EFER", regs);
-            break;
-        default:
-            if ( VMI_PM_IA32E == vmi->page_mode) {
-                switch (reg) {
-                    case RAX:
-                        *value = parse_reg_value("RAX", regs);
-                        break;
-                    case RBX:
-                        *value = parse_reg_value("RBX", regs);
-                        break;
-                    case RCX:
-                        *value = parse_reg_value("RCX", regs);
-                        break;
-                    case RDX:
-                        *value = parse_reg_value("RDX", regs);
-                        break;
-                    case RBP:
-                        *value = parse_reg_value("RBP", regs);
-                        break;
-                    case RSI:
-                        *value = parse_reg_value("RSI", regs);
-                        break;
-                    case RDI:
-                        *value = parse_reg_value("RDI", regs);
-                        break;
-                    case RSP:
-                        *value = parse_reg_value("RSP", regs);
-                        break;
-                    case R8:
-                        *value = parse_reg_value("R8", regs);
-                        break;
-                    case R9:
-                        *value = parse_reg_value("R9", regs);
-                        break;
-                    case R10:
-                        *value = parse_reg_value("R10", regs);
-                        break;
-                    case R11:
-                        *value = parse_reg_value("R11", regs);
-                        break;
-                    case R12:
-                        *value = parse_reg_value("R12", regs);
-                        break;
-                    case R13:
-                        *value = parse_reg_value("R13", regs);
-                        break;
-                    case R14:
-                        *value = parse_reg_value("R14", regs);
-                        break;
-                    case R15:
-                        *value = parse_reg_value("R15", regs);
-                        break;
-                    case RIP:
-                        *value = parse_reg_value("RIP", regs);
-                        break;
-                    case RFLAGS:
-                        *value = parse_reg_value("RFL", regs);
-                        break;
-                    default:
-                        ret = VMI_FAILURE;
-                        break;
-                }
-            } else {
-                switch (reg) {
-                    case RAX:
-                        *value = parse_reg_value("EAX", regs);
-                        break;
-                    case RBX:
-                        *value = parse_reg_value("EBX", regs);
-                        break;
-                    case RCX:
-                        *value = parse_reg_value("ECX", regs);
-                        break;
-                    case RDX:
-                        *value = parse_reg_value("EDX", regs);
-                        break;
-                    case RBP:
-                        *value = parse_reg_value("EBP", regs);
-                        break;
-                    case RSI:
-                        *value = parse_reg_value("ESI", regs);
-                        break;
-                    case RDI:
-                        *value = parse_reg_value("EDI", regs);
-                        break;
-                    case RSP:
-                        *value = parse_reg_value("ESP", regs);
-                        break;
-                    case RIP:
-                        *value = parse_reg_value("EIP", regs);
-                        break;
-                    case RFLAGS:
-                        *value = parse_reg_value("EFL", regs);
-                        break;
-                    default:
-                        ret = VMI_FAILURE;
-                        break;
-                }
+    switch (reg)
+    {
+    case CR0:
+        *value = parse_reg_value("CR0", regs);
+        break;
+    case CR2:
+        *value = parse_reg_value("CR2", regs);
+        break;
+    case CR3:
+        *value = parse_reg_value("CR3", regs);
+        break;
+    case CR4:
+        *value = parse_reg_value("CR4", regs);
+        break;
+    case DR0:
+        *value = parse_reg_value("DR0", regs);
+        break;
+    case DR1:
+        *value = parse_reg_value("DR1", regs);
+        break;
+    case DR2:
+        *value = parse_reg_value("DR2", regs);
+        break;
+    case DR3:
+        *value = parse_reg_value("DR3", regs);
+        break;
+    case DR6:
+        *value = parse_reg_value("DR6", regs);
+        break;
+    case DR7:
+        *value = parse_reg_value("DR7", regs);
+        break;
+    case CS_SEL:
+        *value = parse_seg_reg_value("CS", regs, SEGMENT_SELECTOR);
+        break;
+    case DS_SEL:
+        *value = parse_seg_reg_value("DS", regs, SEGMENT_SELECTOR);
+        break;
+    case ES_SEL:
+        *value = parse_seg_reg_value("ES", regs, SEGMENT_SELECTOR);
+        break;
+    case FS_SEL:
+        *value = parse_seg_reg_value("FS", regs, SEGMENT_SELECTOR);
+        break;
+    case GS_SEL:
+        *value = parse_seg_reg_value("GS", regs, SEGMENT_SELECTOR);
+        break;
+    case SS_SEL:
+        *value = parse_seg_reg_value("SS", regs, SEGMENT_SELECTOR);
+        break;
+    case TR_SEL:
+        *value = parse_seg_reg_value("TR", regs, SEGMENT_SELECTOR);
+        break;
+    case LDTR_SEL:
+        *value = parse_seg_reg_value("LDT", regs, SEGMENT_SELECTOR);
+        break;
+    case CS_LIMIT:
+        *value = parse_seg_reg_value("CS", regs, SEGMENT_LIMIT);
+        break;
+    case DS_LIMIT:
+        *value = parse_seg_reg_value("DS", regs, SEGMENT_LIMIT);
+        break;
+    case ES_LIMIT:
+        *value = parse_seg_reg_value("ES", regs, SEGMENT_LIMIT);
+        break;
+    case FS_LIMIT:
+        *value = parse_seg_reg_value("FS", regs, SEGMENT_LIMIT);
+        break;
+    case GS_LIMIT:
+        *value = parse_seg_reg_value("GS", regs, SEGMENT_LIMIT);
+        break;
+    case SS_LIMIT:
+        *value = parse_seg_reg_value("SS", regs, SEGMENT_LIMIT);
+        break;
+    case TR_LIMIT:
+        *value = parse_seg_reg_value("TR", regs, SEGMENT_LIMIT);
+        break;
+    case LDTR_LIMIT:
+        *value = parse_seg_reg_value("LDTR", regs, SEGMENT_LIMIT);
+        break;
+    case IDTR_LIMIT:
+        *value = parse_seg_reg_value("IDTR", regs, SEGMENT_LIMIT);
+        break;
+    case GDTR_LIMIT:
+        *value = parse_seg_reg_value("GDTR", regs, SEGMENT_LIMIT);
+        break;
+    case CS_BASE:
+        *value = parse_seg_reg_value("CS", regs, SEGMENT_BASE);
+        break;
+    case DS_BASE:
+        *value = parse_seg_reg_value("DS", regs, SEGMENT_BASE);
+        break;
+    case ES_BASE:
+        *value = parse_seg_reg_value("ES", regs, SEGMENT_BASE);
+        break;
+    case FS_BASE:
+        *value = parse_seg_reg_value("FS", regs, SEGMENT_BASE);
+        break;
+    case GS_BASE:
+        *value = parse_seg_reg_value("GS", regs, SEGMENT_BASE);
+        break;
+    case SS_BASE:
+        *value = parse_seg_reg_value("SS", regs, SEGMENT_BASE);
+        break;
+    case TR_BASE:
+        *value = parse_seg_reg_value("TR", regs, SEGMENT_BASE);
+        break;
+    case LDTR_BASE:
+        *value = parse_seg_reg_value("LDT", regs, SEGMENT_BASE);
+        break;
+    case IDTR_BASE:
+        *value = parse_seg_reg_value("IDT", regs, SEGMENT_BASE);
+        break;
+    case GDTR_BASE:
+        *value = parse_seg_reg_value("GDT", regs, SEGMENT_BASE);
+        break;
+    case CS_ARBYTES:
+        *value = parse_seg_reg_value("CS", regs, SEGMENT_ATTR);
+        break;
+    case DS_ARBYTES:
+        *value = parse_seg_reg_value("DS", regs, SEGMENT_ATTR);
+        break;
+    case ES_ARBYTES:
+        *value = parse_seg_reg_value("ES", regs, SEGMENT_ATTR);
+        break;
+    case FS_ARBYTES:
+        *value = parse_seg_reg_value("FS", regs, SEGMENT_ATTR);
+        break;
+    case GS_ARBYTES:
+        *value = parse_seg_reg_value("GS", regs, SEGMENT_ATTR);
+        break;
+    case SS_ARBYTES:
+        *value = parse_seg_reg_value("SS", regs, SEGMENT_ATTR);
+        break;
+    case TR_ARBYTES:
+        *value = parse_seg_reg_value("TR", regs, SEGMENT_ATTR);
+        break;
+    case LDTR_ARBYTES:
+        *value = parse_seg_reg_value("LDT", regs, SEGMENT_ATTR);
+        break;
+    case MSR_EFER:
+        *value = parse_reg_value("EFER", regs);
+        break;
+    default:
+        if (VMI_PM_IA32E == vmi->page_mode)
+        {
+            switch (reg)
+            {
+            case RAX:
+                *value = parse_reg_value("RAX", regs);
+                break;
+            case RBX:
+                *value = parse_reg_value("RBX", regs);
+                break;
+            case RCX:
+                *value = parse_reg_value("RCX", regs);
+                break;
+            case RDX:
+                *value = parse_reg_value("RDX", regs);
+                break;
+            case RBP:
+                *value = parse_reg_value("RBP", regs);
+                break;
+            case RSI:
+                *value = parse_reg_value("RSI", regs);
+                break;
+            case RDI:
+                *value = parse_reg_value("RDI", regs);
+                break;
+            case RSP:
+                *value = parse_reg_value("RSP", regs);
+                break;
+            case R8:
+                *value = parse_reg_value("R8", regs);
+                break;
+            case R9:
+                *value = parse_reg_value("R9", regs);
+                break;
+            case R10:
+                *value = parse_reg_value("R10", regs);
+                break;
+            case R11:
+                *value = parse_reg_value("R11", regs);
+                break;
+            case R12:
+                *value = parse_reg_value("R12", regs);
+                break;
+            case R13:
+                *value = parse_reg_value("R13", regs);
+                break;
+            case R14:
+                *value = parse_reg_value("R14", regs);
+                break;
+            case R15:
+                *value = parse_reg_value("R15", regs);
+                break;
+            case RIP:
+                *value = parse_reg_value("RIP", regs);
+                break;
+            case RFLAGS:
+                *value = parse_reg_value("RFL", regs);
+                break;
+            default:
+                ret = VMI_FAILURE;
+                break;
             }
+        }
+        else
+        {
+            switch (reg)
+            {
+            case RAX:
+                *value = parse_reg_value("EAX", regs);
+                break;
+            case RBX:
+                *value = parse_reg_value("EBX", regs);
+                break;
+            case RCX:
+                *value = parse_reg_value("ECX", regs);
+                break;
+            case RDX:
+                *value = parse_reg_value("EDX", regs);
+                break;
+            case RBP:
+                *value = parse_reg_value("EBP", regs);
+                break;
+            case RSI:
+                *value = parse_reg_value("ESI", regs);
+                break;
+            case RDI:
+                *value = parse_reg_value("EDI", regs);
+                break;
+            case RSP:
+                *value = parse_reg_value("ESP", regs);
+                break;
+            case RIP:
+                *value = parse_reg_value("EIP", regs);
+                break;
+            case RFLAGS:
+                *value = parse_reg_value("EFL", regs);
+                break;
+            default:
+                ret = VMI_FAILURE;
+                break;
+            }
+        }
 
-            break;
+        break;
     }
 
     if (regs)
@@ -1184,8 +1249,7 @@ kvm_write(
     return kvm_put_memory(vmi, paddr, length, buf);
 }
 
-int
-kvm_is_pv(
+int kvm_is_pv(
     vmi_instance_t UNUSED(vmi))
 {
     return 0;
@@ -1196,26 +1260,28 @@ kvm_test(
     uint64_t domainid,
     const char *name,
     uint64_t UNUSED(init_flags),
-    vmi_init_data_t* UNUSED(init_data))
+    vmi_init_data_t *UNUSED(init_data))
 {
     struct vmi_instance _vmi = {0};
     vmi_instance_t vmi = &_vmi;
 
-    if ( VMI_FAILURE == kvm_init(vmi, 0, NULL) )
+    if (VMI_FAILURE == kvm_init(vmi, 0, NULL))
         return VMI_FAILURE;
 
-    if (name) {
+    if (name)
+    {
         domainid = kvm_get_id_from_name(vmi, name);
         if (domainid != VMI_INVALID_DOMID)
             return VMI_SUCCESS;
     }
 
-    if (domainid != VMI_INVALID_DOMID) {
+    if (domainid != VMI_INVALID_DOMID)
+    {
         char *_name = NULL;
         status_t rc = kvm_get_name_from_id(vmi, domainid, &_name);
         free(_name);
 
-        if ( VMI_SUCCESS == rc )
+        if (VMI_SUCCESS == rc)
             return rc;
     }
 
@@ -1229,7 +1295,8 @@ kvm_pause_vm(
 {
     kvm_instance_t *kvm = kvm_get_instance(vmi);
 
-    if (-1 == kvm->libvirt.virDomainSuspend(kvm->dom)) {
+    if (-1 == kvm->libvirt.virDomainSuspend(kvm->dom))
+    {
         return VMI_FAILURE;
     }
     return VMI_SUCCESS;
@@ -1241,7 +1308,8 @@ kvm_resume_vm(
 {
     kvm_instance_t *kvm = kvm_get_instance(vmi);
 
-    if (-1 == kvm->libvirt.virDomainResume(kvm->dom)) {
+    if (-1 == kvm->libvirt.virDomainResume(kvm->dom))
+    {
         return VMI_FAILURE;
     }
     return VMI_SUCCESS;
