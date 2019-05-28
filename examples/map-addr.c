@@ -33,12 +33,11 @@
 
 #define PAGE_SIZE 1 << 12
 
-int
-main(
+int main(
     int argc,
     char **argv)
 {
-    if ( argc != 3 )
+    if (argc != 3)
         return 1;
 
     vmi_instance_t vmi;
@@ -49,18 +48,20 @@ main(
 
     /* this is the address to map */
     char *addr_str = argv[2];
-    addr_t addr = (addr_t) strtoul(addr_str, NULL, 16);
+    addr_t addr = (addr_t)strtoul(addr_str, NULL, 16);
 
     /* initialize the libvmi library */
     if (VMI_FAILURE ==
-            vmi_init_complete(&vmi, name, VMI_INIT_DOMAINNAME, NULL,
-                              VMI_CONFIG_GLOBAL_FILE_ENTRY, NULL, NULL)) {
+        vmi_init_complete(&vmi, name, VMI_INIT_DOMAINNAME, NULL,
+                          VMI_CONFIG_GLOBAL_FILE_ENTRY, NULL, NULL))
+    {
         printf("Failed to init LibVMI library.\n");
         goto error_exit;
     }
 
     /* get the symbol's memory page */
-    if (VMI_FAILURE == vmi_read_va(vmi, addr, 0, PAGE_SIZE, memory, NULL)) {
+    if (VMI_FAILURE == vmi_read_va(vmi, addr, 0, PAGE_SIZE, memory, NULL))
+    {
         printf("failed to map memory.\n");
         goto error_exit;
     }

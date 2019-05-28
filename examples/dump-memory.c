@@ -34,15 +34,17 @@
 
 #define PAGE_SIZE 1 << 12
 
-int
-main(
+int main(
     int argc,
     char **argv)
 {
-    if ( argc != 3 )
+    if (argc != 3)
+    {
+        printf("[Error]Must argc == 3\n");
         return 1;
+    }
 
-    vmi_instance_t vmi = NULL;
+    vmi_instance_t vmi = NULL; // ?
     char *filename = NULL;
     FILE *f = NULL;
     unsigned char memory[PAGE_SIZE];
@@ -61,13 +63,17 @@ main(
     /* this is the file name to write the memory image to */
     filename = strndup(argv[2], 50);
 
-    if (VMI_FAILURE == vmi_get_access_mode(vmi, (void*)name, VMI_INIT_DOMAINNAME, NULL, &mode) )
+    if (VMI_FAILURE == vmi_get_access_mode(vmi, (void *)name, VMI_INIT_DOMAINNAME, NULL, &mode))
+    {
+        printf("[Error!]: vmi_get_access_mode\n");
         goto error_exit;
+    }
 
     /*
      * For bareflank we have to pass-in the actual memory map of the machine.
      */
-    if ( mode == VMI_BAREFLANK ) {
+    if (mode == VMI_BAREFLANK)
+    {
         printf("Using this example on Bareflank is not safe.\n");
         printf("You have to adjust it to match your machine before running it.\n");
         goto error_exit;
@@ -96,35 +102,45 @@ main(
     }
 
     /* initialize the libvmi library */
-    if (VMI_FAILURE == vmi_init(&vmi, mode, (void*)name, VMI_INIT_DOMAINNAME, init_data, NULL)) {
+    if (VMI_FAILURE == vmi_init(&vmi, mode, (void *)name, VMI_INIT_DOMAINNAME, init_data, NULL))
+    {
+        // vmi_init
+        // ここでつまりがち
         printf("Failed to init LibVMI library.\n");
         goto error_exit;
     }
 
     /* open the file for writing */
-    if ((f = fopen(filename, "w+")) == NULL) {
+    if ((f = fopen(filename, "w+")) == NULL)
+    {
         printf("failed to open file for writing.\n");
         goto error_exit;
     }
 
     size = vmi_get_max_physical_address(vmi);
 
-    while (address < size) {
+    while (address < size)
+    {
 
         /* write memory to file */
-        if (VMI_SUCCESS == vmi_read_pa(vmi, address, PAGE_SIZE, memory, NULL)) {
+        if (VMI_SUCCESS == vmi_read_pa(vmi, address, PAGE_SIZE, memory, NULL))
+        {
             /* memory mapped, just write to file */
             size_t written = fwrite(memory, 1, PAGE_SIZE, f);
 
-            if (written != PAGE_SIZE) {
+            if (written != PAGE_SIZE)
+            {
                 printf("failed to write memory to file.\n");
                 goto error_exit;
             }
-        } else {
+        }
+        else
+        {
             /* memory not mapped, write zeros to maintain offset */
             size_t written = fwrite(zeros, 1, PAGE_SIZE, f);
 
-            if (written != PAGE_SIZE) {
+            if (written != PAGE_SIZE)
+            {
                 printf("failed to write zeros to file.\n");
                 goto error_exit;
             }

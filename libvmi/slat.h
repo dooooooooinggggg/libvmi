@@ -36,67 +36,68 @@
 #include <stdbool.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #pragma GCC visibility push(default)
 
-/**
+    /**
 * Checks if slat is enabled on the domain
 *
 * @param[in] vmi LibVMI instance
 * @param[out] state slat state of the domain
 * @return VMI_SUCCESS or VMI_FAILURE
 */
-status_t vmi_slat_get_domain_state (
-    vmi_instance_t vmi,
-    bool *state);
+    status_t vmi_slat_get_domain_state(
+        vmi_instance_t vmi,
+        bool *state);
 
-/**
+    /**
 * Enables or disables slat for the domain
 *
 * @param[in] vmi LibVMI instance
 * @param[in] state slat state of the domain
 * @return VMI_SUCCESS or VMI_FAILURE
 */
-status_t vmi_slat_set_domain_state (
-    vmi_instance_t vmi,
-    bool state);
+    status_t vmi_slat_set_domain_state(
+        vmi_instance_t vmi,
+        bool state);
 
-/**
+    /**
 * Creates a new slat slat_id
 *
 * @param[in] vmi LibVMI instance
 * @param[out] slat_id Number of the newly created slat_id
 * @return VMI_SUCCESS or VMI_FAILURE
 */
-status_t vmi_slat_create (
-    vmi_instance_t vmi,
-    uint16_t *slat_id);
+    status_t vmi_slat_create(
+        vmi_instance_t vmi,
+        uint16_t *slat_id);
 
-/**
+    /**
 * Destroys an slat slat_id
 *
 * @param[in] vmi LibVMI instance
 * @param[in] slat_id Number of the slat_id which is to be destroyed
 * @return VMI_SUCCESS or VMI_FAILURE
 */
-status_t vmi_slat_destroy (
-    vmi_instance_t vmi,
-    uint16_t slat_idx);
+    status_t vmi_slat_destroy(
+        vmi_instance_t vmi,
+        uint16_t slat_idx);
 
-/**
+    /**
 * Switches to a specific slat slat_id
 *
 * @param[in] vmi LibVMI instance
 * @param[in] slat_id Number of the slat_id which to which to switch to
 * @return VMI_SUCCESS or VMI_FAILURE
 */
-status_t vmi_slat_switch (
-    vmi_instance_t vmi,
-    uint16_t slat_idx);
+    status_t vmi_slat_switch(
+        vmi_instance_t vmi,
+        uint16_t slat_idx);
 
-/**
+    /**
 *
 *
 * @param[in] vmi LibVMI instance
@@ -105,11 +106,11 @@ status_t vmi_slat_switch (
 * @param[in] new_gfn The new gfn
 * @return VMI_SUCCESS or VMI_FAILURE
 */
-status_t vmi_slat_change_gfn (
-    vmi_instance_t vmi,
-    uint16_t slat_idx,
-    addr_t old_gfn,
-    addr_t new_gfn);
+    status_t vmi_slat_change_gfn(
+        vmi_instance_t vmi,
+        uint16_t slat_idx,
+        addr_t old_gfn,
+        addr_t new_gfn);
 
 #pragma GCC visibility pop
 
