@@ -98,6 +98,7 @@ int main(int argc, char **argv)
 
     /* demonstrate name and id accessors */
     char *name2 = vmi_get_name(vmi);
+    printf("[My debug]vmi_Get_name: %s\n", name2);
     vmi_mode_t mode;
 
     if (VMI_FAILURE == vmi_get_access_mode(vmi, NULL, 0, NULL, &mode))
@@ -116,6 +117,7 @@ int main(int argc, char **argv)
     free(name2);
 
     os_t os = vmi_get_ostype(vmi);
+    printf("[My debug]os_t: %d\n", os);
 
     /* get the head of the list */
     if (VMI_OS_LINUX == os)
